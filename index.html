@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        /* Container for the list */
+        .surah-list {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Individual list items */
+        .surah-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .surah-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Surah title */
+        .surah-title {
+            font-size: 18px;
+            margin: 0 0 5px;
+            color: #333;
+        }
+
+        /* Surah description */
+        .surah-description {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Add hover effect */
+        .surah-item:hover {
+            background-color: #e6f7ff;
+        }
+    </style>
+</head>
+<body>
+    
+<script src='./dist/sql-wasm.js'></script>
+<script type="module">
+
+
+const sqlPromise = initSqlJs({
+    locateFile: file => `./dist/${file}`
+});
+
+const dataPromise = fetch("./data.db").then(res => res.arrayBuffer());
+const [SQL, buf] = await Promise.all([sqlPromise, dataPromise])
+const db = new SQL.Database(new Uint8Array(buf));
+
+// // Prepare an sql statement
+const stmt = db.prepare("SELECT * FROM surah");
+// const stmt = db.prepare("SELECT * FROM ayah WHERE surah_number = 2 and other_content LIKE '%şübhəsiz%'");
+
+const results = [];
+
+while (stmt.step()) 
+{
+    const row = stmt.getAsObject(); // Get the current row as an object
+    results.push(row); // Push the row object to the results array
+}
+// free the memory used by the statement
+stmt.free();
+
+// Generate HTML for the list
+const listContainer = document.createElement('div');
+listContainer.className = 'surah-list';
+
+results.forEach(item => {
+    const listItem = document.createElement('div');
+    listItem.className = 'surah-item';
+    
+    listItem.innerHTML = `
+        <h2 class="surah-title">${item.surah_number}: ${item.name}</h2>
+        <p class="surah-description">${item.description}</p>
+    `;
+    
+    listContainer.appendChild(listItem);
+});
+
+// Append the list to the body or any specific container
+document.body.appendChild(listContainer);
+
+
+</script>
+
+</body>
+</html>
