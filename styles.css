@@ -1,0 +1,316 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    background-color: #15141C;
+    color: #FFFFFF;
+    font-size: 16px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    font-size: 20px;
+}
+
+.surah-item-left {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.menu-icon,
+.search-icon {
+    width: 24px;
+    height: 24px;
+    background-image: url('./search-line 1.svg');
+    border-radius: 4px;
+}
+
+.greeting {
+    margin-bottom: 20px;
+}
+
+.greeting p {
+    font-size: 14px;
+    opacity: 0.6;
+}
+
+.greeting h2 {
+    font-size: 22px;
+}
+
+.last-read {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #5C4D91;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.last-read-text p {
+    font-size: 14px;
+}
+
+.last-read-text h3 {
+    font-size: 18px;
+    margin: 5px 0;
+}
+
+.last-read-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #FFFFFF;
+    border-radius: 10px;
+}
+
+.nav-tabs {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.nav-tabs a {
+    color: #FFFFFF;
+    text-decoration: none;
+    padding: 10px;
+    border-bottom: 2px solid transparent;
+}
+
+.nav-tabs .active {
+    border-bottom: 2px solid #9147FF;
+}
+
+.surah-list {
+    margin-bottom: 20px;
+}
+
+.surah-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #303030;
+    cursor: pointer;
+}
+
+.surah-item:hover {
+    background-color: #0e0e17;
+}
+
+.surah-number {
+    background-color: #9147FF;
+    color: #FFFFFF;
+    padding: 10px;
+    border-radius: 50%;
+    text-align: center;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    line-height: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.surah-info h4 {
+    font-size: 16px;
+    line-height: 40px;
+}
+
+.surah-info p {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+.surah-name-arabic {
+    font-size: 20px;
+    color: #9147FF;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 10px;
+    border-top: 1px solid #303030;
+}
+
+.footer-icon {
+    width: 24px;
+    height: 24px;
+    background-color: #FFFFFF;
+    border-radius: 4px;
+}
+
+.search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-icon {
+    cursor: pointer;
+}
+
+.search-input {
+    width: 0;
+    padding: 0;
+    opacity: 0;
+    border: none;
+    border-bottom: 2px solid #9147FF;
+    transition: width 0.3s ease, opacity 0.3s ease, padding 0.3s ease;
+    font-size: 16px;
+    color: #FFFFFF;
+    background-color: transparent;
+    outline: none;
+}
+
+.search-input.show {
+    width: 200px;
+    padding: 5px 10px;
+    opacity: 1;
+}
+
+.ayah-item, .search-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #303030;
+}
+
+.ayah-item:hover {
+    background-color: #0e0e17;
+}
+
+.ayah-number {
+    background-color: #9147FF;
+    color: #FFFFFF;
+    padding: 10px;
+    border-radius: 50%;
+    text-align: center;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+    line-height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ayah-content, .search-content {
+    flex: 1;
+    padding-left: 20px;
+}
+
+.ayah-content p, .search-content p {
+    font-size: 20px;
+    color: #bdbdbd;
+    line-height: 30px;
+    padding: 12px 0
+}
+
+
+.highlight-1 {
+    color: #8c9d5c;
+}
+.highlight-2 {
+    color: #578d56;
+}
+.highlight-3 {
+    color: #87aaa9;
+}
+
+.back-button {
+    background-color: #9147FF;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.back-button:hover {
+    background-color: #6a3db6;
+}
+
+.search-content h4 {
+    background: #2e2d37;
+    width: fit-content;
+    padding: 10px 9px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.highlight-word {
+    color: black;
+    background: #ffea2a;
+    padding: 2px 4px;
+    border-radius: 9px;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    flex-wrap: wrap;
+}
+
+.page-button {
+    background-color: #f0f0f0; /* Light Gray */
+    border: 1px solid #9147FF; /* Light border */
+    color: #333; /* Dark text color */
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.page-button:hover {
+    background-color: #e0e0e0; /* Slightly darker gray on hover */
+}
+
+.page-button:active {
+    background-color: #ccc; /* Darker gray on click */
+}
+
+.page-button:disabled {
+    background-color: #000; /* Disabled button color */
+    color: #888; /* Disabled text color */
+    cursor: not-allowed;
+}
+
+.page-button:not(:disabled) {
+    background-color: #9147FF; /* Primary color for active buttons */
+    color: #fff; /* White text color for active buttons */
+}
+
+.page-button:not(:disabled):hover {
+    background-color: #501d9e; /* Darker shade of primary color on hover */
+}
+
+.page-button:not(:disabled):active {
+    background-color: #a272eb; /* Even darker shade on click */
+}

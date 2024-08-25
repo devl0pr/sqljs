@@ -4,96 +4,394 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-
-    <style>
-        /* Container for the list */
-        .surah-list {
-            max-width: 600px;
-            margin: 20px auto;
-            padding: 10px;
-            background-color: #f9f9f9;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Individual list items */
-        .surah-item {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .surah-item:last-child {
-            border-bottom: none;
-        }
-
-        /* Surah title */
-        .surah-title {
-            font-size: 18px;
-            margin: 0 0 5px;
-            color: #333;
-        }
-
-        /* Surah description */
-        .surah-description {
-            font-size: 14px;
-            color: #666;
-        }
-
-        /* Add hover effect */
-        .surah-item:hover {
-            background-color: #e6f7ff;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+
+    <div class="container">
+        <header class="header">
+            <h1>Quran App</h1>
+            <div class="search">
+                <div class="search-icon"></div>
+                <input type="text" class="search-input" placeholder="Search..." />
+            </div>
+        </header>
+        <div class="surah-list" style="display: block;"></div>
+        <div class="ayah-list" style="display: none;">
+            <button class="back-button">Back</button>
+            <div class="ayah-items"></div>
+        </div>
+        <div class="search-results" style="display: none;"></div>
+    </div>
+
     
 <script src='./dist/sql-wasm.js'></script>
 <script type="module">
-
-
-const sqlPromise = initSqlJs({
-    locateFile: file => `./dist/${file}`
-});
-
-const dataPromise = fetch("./data.db").then(res => res.arrayBuffer());
-const [SQL, buf] = await Promise.all([sqlPromise, dataPromise])
-const db = new SQL.Database(new Uint8Array(buf));
-
-// // Prepare an sql statement
-const stmt = db.prepare("SELECT * FROM surah");
-// const stmt = db.prepare("SELECT * FROM ayah WHERE surah_number = 2 and other_content LIKE '%şübhəsiz%'");
-
-const results = [];
-
-while (stmt.step()) 
-{
-    const row = stmt.getAsObject(); // Get the current row as an object
-    results.push(row); // Push the row object to the results array
-}
-// free the memory used by the statement
-stmt.free();
-
-// Generate HTML for the list
-const listContainer = document.createElement('div');
-listContainer.className = 'surah-list';
-
-results.forEach(item => {
-    const listItem = document.createElement('div');
-    listItem.className = 'surah-item';
+    const sqlPromise = initSqlJs({
+        locateFile: file => `./dist/${file}`
+    });
     
-    listItem.innerHTML = `
-        <h2 class="surah-title">${item.surah_number}: ${item.name}</h2>
-        <p class="surah-description">${item.description}</p>
-    `;
+    const dataPromise = fetch("./data.db").then(res => res.arrayBuffer());
+    const [SQL, buf] = await Promise.all([sqlPromise, dataPromise]);
+    const db = new SQL.Database(new Uint8Array(buf));
     
-    listContainer.appendChild(listItem);
-});
+    const RESULTS_PER_PAGE = 10;
+    
+    // Function to fetch Surah data
+    async function fetchSurahData() {
+        const stmt = db.prepare("SELECT * FROM surah");
+        const results = [];
+        
+        while (stmt.step()) {
+            results.push(stmt.getAsObject());
+        }
+        
+        stmt.free();
+        return results;
+    }
+    
+    // Function to get Surah number from URL
+    function getSurahNumberFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('surah');
+    }
+    
+    // Function to get current page number from URL
+    function getCurrentPageFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        return parseInt(params.get('page'), 10) || 1;
+    }
+    
+    // Function to perform search
+    async function performSearch(query, searchInAllAyahs = false, page = 1) {
+        query = query.trim().toLowerCase();
 
-// Append the list to the body or any specific container
-document.body.appendChild(listContainer);
+        const results = [];
+        const resultsCount = { count: 0 };
+
+        let stmt;
+
+        const surahNumber = getSurahNumberFromURL(); // Get Surah number from URL
+
+        if (surahNumber) {
+            // Search within the selected Surah
+            stmt = searchSpecificSurahAyahs(query, surahNumber);
+        } else {
+            // Search all Ayahs
+            stmt = searchAllAyahs(query, page, resultsCount);
+        }
+
+        while (stmt.step()) {
+            results.push(stmt.getAsObject());
+        }
+
+        stmt.free();
+        if (surahNumber) {
+            updateAyahList(results);
+            document.querySelector('.ayah-list').style.display = 'block'; // Ensure ayah-list is visible
+            document.querySelector('.search-results').style.display = 'none'; // Hide search-results
+            document.querySelector('.surah-list').style.display = 'none'; // Hide surah-list
+        } else {
+            if (searchInAllAyahs) {
+                updateSearchResults(results, resultsCount.count, page, query);
+            } else {
+                updateAyahList(results);
+            }
+        }
+
+        // Update URL with query and page number
+        const url = new URL(window.location);
+        url.searchParams.set('query', query);
+        url.searchParams.set('page', page);
+        history.pushState({ query: query, page: page }, '', url.href);
+    }
+
+    
+    // Function to search all Ayahs
+    function searchAllAyahs(query, page, resultsCount) {
+        const offset = (page - 1) * RESULTS_PER_PAGE;
+
+        // Prepare the count query
+        const stmtCount = db.prepare(`
+            SELECT COUNT(*) AS count 
+            FROM ayah 
+            WHERE LOWER(other_content) LIKE ?
+        `);
+        stmtCount.bind([`%${query}%`]);
+
+        // Execute the count query
+        stmtCount.step();
+        const countResult = stmtCount.getAsObject();
+        resultsCount.count = countResult ? countResult.count : 0;
+        stmtCount.free();
+
+        // Prepare the search query with pagination
+        const stmt = db.prepare(`
+            SELECT ayah.*, surah.name as surah_name 
+            FROM ayah 
+            JOIN surah ON ayah.surah_number = surah.surah_number
+            WHERE LOWER(ayah.other_content) LIKE ? 
+            LIMIT ? OFFSET ?
+        `);
+        stmt.bind([`%${query}%`, RESULTS_PER_PAGE, offset]);
+
+        return stmt;
+    }
+    
+    // Function to search Ayahs in a specific Surah
+    function searchSpecificSurahAyahs(query, surahNumber) {
+        const stmt = db.prepare(`
+            SELECT * 
+            FROM ayah 
+            WHERE surah_number = ? AND LOWER(other_content) LIKE ?
+        `);
+        stmt.bind([surahNumber, `%${query}%`]);
+        return stmt;
+    }
+
+    // Function to update search results and include pagination
+    function updateSearchResults(results, totalResults, currentPage, query) {
+        const resultsDiv = document.querySelector('.search-results');
+        resultsDiv.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<p>No results found.</p>';
+        } else {
+            resultsDiv.innerHTML = results.map(item => `
+                <div class="search-item">
+                    <div class="search-content">
+                        <h4>${item.surah_number}. ${item.surah_name} - ${item.ayah_number}</h4>
+                        <p>${highlightWord(item.content, query)}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add pagination controls
+            const totalPages = Math.ceil(totalResults / RESULTS_PER_PAGE);
+            if (totalPages > 1) {
+                resultsDiv.innerHTML += `
+                    <div class="pagination">
+                        ${Array.from({ length: totalPages }, (_, i) => `
+                            <button class="page-button" data-page="${i + 1}" ${i + 1 === currentPage ? 'disabled' : ''}>${i + 1}</button>
+                        `).join('')}
+                    </div>
+                `;
+                setupPaginationControls();
+            }
+        }
+        resultsDiv.style.display = 'block';
+        document.querySelector('.surah-list').style.display = 'none';
+        document.querySelector('.ayah-list').style.display = 'none';
+    }
+
+    // Function to setup pagination controls
+    function setupPaginationControls() {
+        document.querySelectorAll('.page-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const page = parseInt(this.getAttribute('data-page'), 10);
+                const query = document.querySelector('.search-input').value.trim();
+                performSearch(query, true, page);
+            });
+        });
+    }
+
+    function updateSurahList(results) {
+        const surahList = document.querySelector('.surah-list');
+        surahList.innerHTML = results.map(item => `
+            <div class="surah-item">
+                <div class="surah-item-left">
+                    <div class="surah-number">${item.surah_number}</div>
+                    <div class="surah-info">
+                        <h4>${item.name}</h4>
+                        <p>${item.description}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateAyahList(results) {
+        const ayahItems = document.querySelector('.ayah-items');
+        ayahItems.innerHTML = results.length ? results.map(item => `
+            <div class="ayah-item">
+                <div class="ayah-number">${item.ayah_number}</div>
+                <div class="ayah-content">
+                    <p>${applyRandomHighlights(item.content)}</p>
+                </div>
+            </div>
+        `).join('') : '<p>No ayahs found for this surah.</p>';
+    }
+
+    function applyRandomHighlights(text) {
+        const colors = ['highlight-1', 'highlight-2', 'highlight-3'];
+        const sentences = text.split('. ');
+        return sentences.map(sentence => {
+            const colorClass = colors[Math.floor(Math.random() * colors.length)];
+            return `<span class="${colorClass}">${sentence}</span>`;
+        }).join('. ');
+    }
+    
+    // Function to setup search input
+    function setupSearchInput() {
+        let debounceTimer;
+        document.querySelector('.search-input').addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const query = this.value.trim();
+            const surahNumber = getSurahNumberFromURL(); // Get Surah number from URL
+            const isSearchResultsVisible = document.querySelector('.search-results').style.display === 'block';
+            const isSurahListVisible = document.querySelector('.surah-list').style.display === 'block';
+            const isAyahListVisible = document.querySelector('.ayah-list').style.display === 'block';
+            const currentPage = getCurrentPageFromURL();
+
+            debounceTimer = setTimeout(() => {
+                if (query) {
+                    if (isSearchResultsVisible) {
+                        // Update search results if already in the search results view
+                        performSearch(query, true, currentPage); // Search all Ayahs
+                    } else {
+                        // Hide Surah list and show search results
+                        document.querySelector('.surah-list').style.display = 'none';
+                        document.querySelector('.ayah-list').style.display = 'none';
+                        document.querySelector('.search-results').style.display = 'block';
+                        performSearch(query, !surahNumber, currentPage); // Search with or without Surah
+                    }
+                } else {
+                    if (isAyahListVisible) {
+                        // If search input is cleared and Ayah list is visible, re-display the Ayah list
+                        performSearch('', false); // Clear search and show Ayahs for the current Surah
+                    } else if (isSurahListVisible) {
+                        // If search input is cleared and Surah list is visible, just clear search results
+                        document.querySelector('.search-results').style.display = 'none';
+                    } else {
+                        // Show the selected Surah's Ayahs when search input is cleared
+                        const surahNumber = getSurahNumberFromURL(); // Ensure Surah number is retrieved
+                        if (surahNumber) {
+                            showAyahs(surahNumber); // Show Ayahs for the selected Surah
+                        } else {
+                            // If no Surah is selected, show Surah list
+                            document.querySelector('.surah-list').style.display = 'block';
+                            document.querySelector('.ayah-list').style.display = 'none';
+                            document.querySelector('.search-results').style.display = 'none';
+
+                            // Update URL to remove search parameters
+                            const url = new URL(window.location);
+                            url.searchParams.delete('query'); // Remove the query parameter
+                            url.searchParams.delete('page'); // Remove the page parameter
+                            history.pushState({}, '', url.href);
+                        }
+                    }
+                }
+            }, 300);
+        });
+
+        document.querySelector('.search-icon').addEventListener('click', function() {
+            const searchInput = document.querySelector('.search-input');
+            searchInput.classList.toggle('show');
+            searchInput.focus();
+        });
+    }
 
 
+
+    // Function to handle Surah item click
+    function setupSurahItemClick() {
+        document.querySelectorAll('.surah-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const surahNumber = this.querySelector('.surah-number').textContent;
+                showAyahs(surahNumber);
+            });
+        });
+    }
+
+    // Function to handle back button click
+    function setupBackButton() {
+        document.querySelector('.back-button').addEventListener('click', function() {
+            document.querySelector('.surah-list').style.display = 'block';
+            document.querySelector('.ayah-list').style.display = 'none';
+            document.querySelector('.search-results').style.display = 'none';
+            history.pushState({ view: 'surahs' }, '', '/');
+        });
+
+        window.addEventListener('popstate', function(event) {
+            if (event.state && event.state.view === 'ayahs') {
+                document.querySelector('.surah-list').style.display = 'none';
+                document.querySelector('.ayah-list').style.display = 'block';
+                document.querySelector('.search-results').style.display = 'none';
+            } else {
+                document.querySelector('.surah-list').style.display = 'block';
+                document.querySelector('.ayah-list').style.display = 'none';
+                document.querySelector('.search-results').style.display = 'none';
+            }
+        });
+    }
+
+    // Function to show Ayahs when a Surah is selected
+    function showAyahs(surahNumber) {
+        const stmt = db.prepare(`SELECT * FROM ayah WHERE surah_number = ?`);
+        stmt.bind([surahNumber]);
+
+        const results = [];
+        while (stmt.step()) {
+            results.push(stmt.getAsObject());
+        }
+        stmt.free();
+        updateAyahList(results);
+        
+        document.querySelector('.surah-list').style.display = 'none';
+        document.querySelector('.ayah-list').style.display = 'block';
+        document.querySelector('.search-results').style.display = 'none';
+
+        // Update URL with selected Surah
+        history.pushState({ view: 'ayahs', surahNumber: surahNumber }, '', `?surah=${surahNumber}`);
+    }
+
+    function highlightWord(text, wordToHighlight) {
+        const colorClass = 'highlight-word'; // Single color class
+        const regex = new RegExp(`(${wordToHighlight})`, 'gi');
+        const highlightedText = text.replace(regex, `<span class="${colorClass}">$1</span>`);
+        return highlightedText;
+    }
+
+
+    // Initialize
+    (async function initialize() {
+        const results = await fetchSurahData();
+        updateSurahList(results);
+        setupSearchInput();
+        setupSurahItemClick();
+        setupBackButton();
+
+        const surahNumber = getSurahNumberFromURL();
+        const page = getCurrentPageFromURL();
+        const query = new URLSearchParams(window.location.search).get('query') || ''; // Get query from URL
+
+        if (query) {
+            document.querySelector('.search-input').value = query; // Set search input value
+            if (surahNumber) {
+                // Perform search in specific Surah
+                performSearch(query, false); // Do not include page in specific Surah search
+            } else {
+                // Perform search in all Ayahs
+                performSearch(query, true, page); // Include page in all Ayahs search
+            }
+            document.querySelector('.search-results').style.display = 'block';
+            document.querySelector('.surah-list').style.display = 'none';
+            document.querySelector('.ayah-list').style.display = 'none';
+        } else if (surahNumber) {
+            showAyahs(surahNumber); // Show Ayahs for the selected Surah
+        } else {
+            document.querySelector('.surah-list').style.display = 'block';
+            document.querySelector('.ayah-list').style.display = 'none';
+            document.querySelector('.search-results').style.display = 'none';
+        }
+    })();
 </script>
+
+    
+    
+    
+    
 
 </body>
 </html>
