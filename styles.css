@@ -222,7 +222,7 @@ body {
 
 .ayah-content p, .search-content p {
     font-size: 20px;
-    color: #bdbdbd;
+    color: #a19153;
     line-height: 30px;
     padding: 12px 0
 }
@@ -367,7 +367,7 @@ body {
 }
 
 .highlight-brackets {
-    color: gray;
+    color: #52475c;
 }
 
 .home-link {
