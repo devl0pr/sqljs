@@ -312,25 +312,32 @@
 
     // Function to handle back button click
     function setupBackButton() {
-        document.querySelector('.back-button').addEventListener('click', function() {
+        const backButton = document.querySelector('.back-button'); // Assume this is the back button
+        backButton.addEventListener('click', () => {
+            const basePath = window.location.pathname; // This should give you "/sqljs/"
+            history.pushState({}, '', basePath); // Set URL to "/sqljs/"
+            
+            // Show Surah list again and hide Ayah list
             document.querySelector('.surah-list').style.display = 'block';
             document.querySelector('.ayah-list').style.display = 'none';
             document.querySelector('.search-results').style.display = 'none';
-            history.pushState({ view: 'surahs' }, '', '/');
-        });
-
-        window.addEventListener('popstate', function(event) {
-            if (event.state && event.state.view === 'ayahs') {
-                document.querySelector('.surah-list').style.display = 'none';
-                document.querySelector('.ayah-list').style.display = 'block';
-                document.querySelector('.search-results').style.display = 'none';
-            } else {
-                document.querySelector('.surah-list').style.display = 'block';
-                document.querySelector('.ayah-list').style.display = 'none';
-                document.querySelector('.search-results').style.display = 'none';
-            }
         });
     }
+
+    window.addEventListener('popstate', function(event) {
+        const query = new URLSearchParams(window.location.search);
+        const surahNumber = query.get('surah');
+
+        if (surahNumber) {
+            showAyahs(surahNumber);
+        } else {
+            // If no `surah` query, show the Surah list
+            document.querySelector('.surah-list').style.display = 'block';
+            document.querySelector('.ayah-list').style.display = 'none';
+            document.querySelector('.search-results').style.display = 'none';
+        }
+    });
+
 
     // Function to show Ayahs when a Surah is selected
     function showAyahs(surahNumber) {
@@ -370,16 +377,17 @@
         setupSurahItemClick();
         setupBackButton();
 
-        const surahNumber = getSurahNumberFromURL();
-        const page = getCurrentPageFromURL();
-        const query = new URLSearchParams(window.location.search).get('query') || ''; // Get query from URL
+        const query = new URLSearchParams(window.location.search);
+        const surahNumber = query.get('surah');
+        const page = query.get('page');
+        const searchString = query.get('query') || ''; // Get search query from URL
 
-        if (query) {
-            document.querySelector('.search-input').value = query; // Set search input value
+        if (searchString) {
+            document.querySelector('.search-input').value = searchString;
             if (surahNumber) {
-                performSearch(query, false); // Do not include page in specific Surah search
+                performSearch(searchString, false);
             } else {
-                performSearch(query, true, page); // Include page in all Ayahs search
+                performSearch(searchString, true, page);
             }
             document.querySelector('.search-results').style.display = 'block';
             document.querySelector('.surah-list').style.display = 'none';
@@ -392,7 +400,6 @@
             document.querySelector('.search-results').style.display = 'none';
         }
 
-        // Hide the loading screen after everything is loaded
         loadingScreen.style.display = 'none';
     })();
 </script>
