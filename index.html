@@ -17,7 +17,7 @@
     
     <div class="container">
         <header class="header">
-            <h1>Quran App</h1>
+            <h1><a href="#" class="home-link">Quran App</a></h1>
             <div class="search">
                 <div class="search-icon"></div>
                 <input type="text" class="search-input" placeholder="Search..." />
@@ -25,7 +25,10 @@
         </header>
         <div class="surah-list" style="display: block;"></div>
         <div class="ayah-list" style="display: none;">
-            <button class="back-button">Back</button>
+            <div>
+                <button class="back-button">Geri</button>
+                <h3 class="surah-title"></h3>
+            </div>
             <div class="ayah-items"></div>
         </div>
         <div class="search-results" style="display: none;"></div>
@@ -42,7 +45,7 @@
     const [SQL, buf] = await Promise.all([sqlPromise, dataPromise]);
     const db = new SQL.Database(new Uint8Array(buf));
     
-    const RESULTS_PER_PAGE = 10;
+    const RESULTS_PER_PAGE = 50;
     
     // Function to fetch Surah data
     async function fetchSurahData() {
@@ -223,7 +226,7 @@
             <div class="ayah-item">
                 <div class="ayah-number">${item.ayah_number}</div>
                 <div class="ayah-content">
-                    <p>${applyRandomHighlights(item.content)}</p>
+                    <p>${highlightBracketedText(item.content)}</p>
                 </div>
             </div>
         `).join('') : '<p>No ayahs found for this surah.</p>';
@@ -341,6 +344,16 @@
 
     // Function to show Ayahs when a Surah is selected
     function showAyahs(surahNumber) {
+        // Fetch the Surah name from the database
+        const surahStmt = db.prepare(`SELECT name FROM surah WHERE surah_number = ?`);
+        surahStmt.bind([surahNumber]);
+        surahStmt.step();
+        const surahName = surahStmt.getAsObject().name;
+        surahStmt.free();
+
+        // Set the Surah name in the surah-title element
+        document.querySelector('.surah-title').textContent = surahName;
+
         const stmt = db.prepare(`SELECT * FROM ayah WHERE surah_number = ?`);
         stmt.bind([surahNumber]);
 
@@ -366,6 +379,30 @@
         return highlightedText;
     }
 
+    function highlightBracketedText(text) {
+        return text.replace(/\((.*?)\)/g, (match, p1) => {
+            return `<span class="highlight-brackets">(${p1})</span>`;
+        });
+    }
+
+
+    function setupHomeLink() {
+        document.querySelector('.home-link').addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent the default anchor behavior
+
+            // Show the Surah list and hide other sections
+            document.querySelector('.surah-list').style.display = 'block';
+            document.querySelector('.ayah-list').style.display = 'none';
+            document.querySelector('.search-results').style.display = 'none';
+
+            // Construct the URL for the Surah list view
+            const basePath = window.location.pathname;
+            const url = new URL(basePath, window.location.origin); // Keeps the base path intact
+
+            // Update the URL to reflect the Surah list view
+            history.pushState({ view: 'surahs' }, '', url.href);
+        });
+    }
 
     // Initialize
     (async function initialize() {
@@ -376,6 +413,7 @@
         setupSearchInput();
         setupSurahItemClick();
         setupBackButton();
+        setupHomeLink();
 
         const query = new URLSearchParams(window.location.search);
         const surahNumber = query.get('surah');

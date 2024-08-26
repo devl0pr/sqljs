@@ -358,3 +358,19 @@ body {
     font-size: 18px;
     color: #fff;
 }
+
+.surah-title {
+    background: #9147ff;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.highlight-brackets {
+    color: gray;
+}
+
+.home-link {
+    text-decoration: none;
+    color: #fff;
+}
