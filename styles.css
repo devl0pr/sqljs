@@ -374,3 +374,48 @@ body {
     text-decoration: none;
     color: #fff;
 }
+
+.surah-description {
+    text-align: center;
+    padding: 14px;
+    font-size: 16px;
+    color: #999999;
+}
+
+.menu {
+    display: flex;
+    gap: 20px;
+    align-items: end;
+}
+
+.about-link {
+    text-decoration: none;
+    color: #fff;
+    border: 1px solid #38373e;
+    padding: 10px;
+}
+
+/* General styling for the About page */
+.about-content {
+    padding: 20px 0;
+    margin: 0 auto;
+    font-family: Arial, sans-serif;
+}
+
+.about-section {
+    margin-bottom: 30px;
+}
+
+.about-section h2 {
+    font-size: 16px;
+    color: #9147FF;
+    border-bottom: 2px solid #9147FF;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.about-section p {
+    font-size: 16px;
+    color: #eaeaea;
+    line-height: 1.7;
+}
