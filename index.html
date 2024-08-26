@@ -8,7 +8,13 @@
 </head>
 <body>
 
-
+    <div class="loading-screen">
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+        <p>Loading...</p>
+    </div>
+    
     <div class="container">
         <header class="header">
             <h1>Quran App</h1>
@@ -356,6 +362,8 @@
 
     // Initialize
     (async function initialize() {
+        const loadingScreen = document.querySelector('.loading-screen');
+
         const results = await fetchSurahData();
         updateSurahList(results);
         setupSearchInput();
@@ -369,10 +377,8 @@
         if (query) {
             document.querySelector('.search-input').value = query; // Set search input value
             if (surahNumber) {
-                // Perform search in specific Surah
                 performSearch(query, false); // Do not include page in specific Surah search
             } else {
-                // Perform search in all Ayahs
                 performSearch(query, true, page); // Include page in all Ayahs search
             }
             document.querySelector('.search-results').style.display = 'block';
@@ -385,6 +391,9 @@
             document.querySelector('.ayah-list').style.display = 'none';
             document.querySelector('.search-results').style.display = 'none';
         }
+
+        // Hide the loading screen after everything is loaded
+        loadingScreen.style.display = 'none';
     })();
 </script>
 
